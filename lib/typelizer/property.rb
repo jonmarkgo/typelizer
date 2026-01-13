@@ -16,10 +16,15 @@ module Typelizer
       fingerprint == other.fingerprint
     end
 
+    # Default to_s for backward compatibility (no sorting)
+    def to_s
+      render(sort_order: :none)
+    end
+
     # Renders the property as a TypeScript property string
     # @param sort_order [Symbol, Proc, nil] Sort order for union types (:none, :alphabetical, or Proc)
     # @return [String] The property string like "name?: Type1 | Type2"
-    def to_s(sort_order: :none)
+    def render(sort_order: :none)
       type_str = type_name(sort_order: sort_order)
 
       # Handle intersection types for traits
