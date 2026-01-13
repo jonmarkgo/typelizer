@@ -16,8 +16,11 @@ module Typelizer
       fingerprint == other.fingerprint
     end
 
-    def to_s
-      type_str = type_name
+    # Renders the property as a TypeScript property string
+    # @param sort_order [Symbol, Proc, nil] Sort order for union types (:none, :alphabetical, or Proc)
+    # @return [String] The property string like "name?: Type1 | Type2"
+    def to_s(sort_order: :none)
+      type_str = type_name(sort_order: sort_order)
 
       # Handle intersection types for traits
       if with_traits&.any? && type.respond_to?(:name)
@@ -26,6 +29,11 @@ module Typelizer
       end
 
       type_str = "Array<#{type_str}>" if multi
+
+      # Apply union sorting to the final type string (handles Array<...> unions too)
+      type_str = UnionTypeSorter.sort(type_str, sort_order)
+
+      # Add nullable at the end (null should always be last in sorted output)
       type_str = "#{type_str} | null" if nullable
 
       "#{name}#{"?" if optional}: #{type_str}"
@@ -47,8 +55,19 @@ module Typelizer
 
     private
 
-    def type_name
+    # Returns the type name, optionally sorting union members
+    # @param sort_order [Symbol, Proc, nil] Sort order for union types
+    # @return [String] The type name
+    def type_name(sort_order: :none)
+      # If enum_type_name is set, use it (named enum type)
       return enum_type_name if enum_type_name
+
+      if enum
+        # Sort enum values if alphabetical sorting is requested
+        enum_values = enum.map { |v| v.to_s.inspect }
+        enum_values = enum_values.sort_by(&:downcase) if sort_order == :alphabetical
+        return enum_values.join(" | ")
+      end
 
       type.respond_to?(:name) ? type.name : type || "unknown"
     end
