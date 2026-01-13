@@ -46,7 +46,8 @@ module Typelizer
 
     def fingerprint
       props = to_h
-      props[:type] = type_name
+      # Always use alphabetical sorting in fingerprint for deterministic change detection
+      props[:type] = UnionTypeSorter.sort(type_name(sort_order: :alphabetical), :alphabetical)
       props.each_with_object(+"<#{self.class.name}") do |(k, v), fp|
         fp << " #{k}=#{v.inspect}" unless v.nil?
       end << ">"
